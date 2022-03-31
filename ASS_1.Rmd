@@ -1,0 +1,73 @@
+---
+title: "gdgsfgs"
+author: "Nikoletta Jablonczay"
+date: "31/03/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(academictwitteR)
+library(rjson)
+library(stringr)
+library(dplyr)
+library(rtweet)
+library(ggplot2)
+library(lubridate)
+library(twitteR)
+library(tidyverse)
+library(ggraph)
+library(stopwords)
+library(sentimentr)
+```
+
+
+```{r}
+library(tidygraph)
+library(plyr)
+```
+
+```{r}
+library(tidytext)
+```
+
+```{r}
+set_bearer()
+```
+
+```{r}
+trending_topics = get_trends()
+query <- search_tweets("Superbowl Halftime Show", n = 200, include_rts = TRUE)
+```
+
+```{r}
+lang_tweet <- query %>% 
+  group_by(lang) %>% 
+  mutate(line = row_number()) %>% 
+  ungroup()
+
+query %>% 
+  count(lang, sort = TRUE)
+
+```
+
+```{r}
+query %>%
+  group_by(lang) %>%
+  summarize(number_lang = count(lang))
+```
+
+```{r}
+query %>% 
+  group_by(lang_label) %>% 
+```
+
+
+```{r}
+save(tweets,file=“filename.RData",envir = parent.frame())
+```
+
