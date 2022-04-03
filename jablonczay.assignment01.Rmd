@@ -1,0 +1,221 @@
+---
+title: "ASS1"
+author: "Nikoletta Jablonczay"
+date: '2022-04-01'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(rtweet)
+library(dplyr)
+library(wordcloud)
+library(RColorBrewer)
+library(stringr)
+library(wordcloud)
+library(academictwitteR)
+library(tidyverse)
+library(tidytext)
+library(ggplot2)
+library(lubridate)
+```
+
+```{r}
+setwd("/Users/jablonczaynikoletta/Documents/2022SS/Social Media")
+```
+
+```{r}
+set_bearer()
+```
+
+```{r}
+trending_topics = get_trends()
+orban <- search_tweets(
+  "#Orban", n = 200, include_rts = TRUE
+)
+```
+
+```{r}
+orban
+```
+
+
+```{r}
+tweets <- orban %>% select(user_id, status_id, created_at, screen_name, reply_to_screen_name, text, hashtags, name, location, favorite_count, retweet_count, urls_expanded_url, mentions_screen_name, lang, retweet_text, retweet_created_at, is_retweet)
+```
+
+```{r}
+list_tweets <- list.files(path="/Users/jablonczaynikoletta/Documents/2022SS/Social Media/data_academic",pattern="data_[0-9]*.json", full.names=TRUE)
+list_users <- list.files(path="/Users/jablonczaynikoletta/Documents/2022SS/Social Media/data_academic",pattern="users_[0-9]*.json", full.names=TRUE)
+```
+
+```{r}
+tweets <- data.frame(text=character(),
+                     hashtag=character(),
+                     date=character(),
+                     url=character(),
+                     tweet_id=double(),
+                     conversation_id=double(),
+                     author_id=double(),
+                     reply=double(),
+                     retweet=double(),
+                     like=double(),
+                     quote=double(),
+                     isretweet=logical(),
+                     isquote=logical(),
+                     isreply=logical(),
+                     retweeted_tweet_id=character(),
+                     quoted_tweet_id=character(),
+                     replied_tweet_id=character(),
+                     language=character(),
+                     mentionedUsers=character(),
+                     hasmedia=logical(),
+                     stringsAsFactors=FALSE) 
+```
+
+
+```{r}
+write.csv(tweets, "/Users/jablonczaynikoletta/Documents/2022SS/Social Media/tweets_orban.csv", row.names = TRUE)
+```
+
+```{r}
+glimpse(tweets)
+```
+
+```{r}
+hashtag_pat <- "#[a-zA-Z0-9_-ー\\.]+"
+hashtag <- str_extract_all(tweets$text, hashtag_pat)
+```
+
+```{r}
+hashtag_word <- unlist(hashtag)
+hashtag_word <- tolower(hashtag_word)
+hashtag_word <- gsub("[[:punct:]ー]", "", hashtag_word)
+```
+
+```{r}
+hashtag_word <- hashtag_word[!str_detect(hashtag_word, "orban")]
+hashtag_word <- hashtag_word[!str_detect(hashtag_word, "markyzay")]
+hashtag_word <- hashtag_word[!str_detect(hashtag_word, "primeminister")]
+hashtag_word <- hashtag_word[!str_detect(hashtag_word, "ungarn")]
+hashtag_word <- hashtag_word[!str_detect(hashtag_word, "hongrie")]
+hashtag_word <- hashtag_word[!str_detect(hashtag_word, "orbán")]
+hashtag_word <- hashtag_word[!str_detect(hashtag_word, "hungría")]
+hashtag_word <- hashtag_word[!str_detect(hashtag_word, "hungarian")]
+hashtag_word <- hashtag_word[!str_detect(hashtag_word, "ungheria")]
+hashtag_word <- hashtag_word[!str_detect(hashtag_word, "poutine")]
+hashtag_word <- hashtag_word[!str_detect(hashtag_word, "russie")]
+```
+
+```{r}
+hashtag_count <- table(hashtag_word)
+top_20_freqs <- sort(hashtag_count, decreasing = TRUE)[1:20]
+top_20_freqs
+```
+
+```{r}
+as.data.frame(hashtag_word) %>%
+  count(hashtag_word, sort = TRUE) %>%
+  mutate(hashtag_word = reorder(hashtag_word, n)) %>%
+  top_n(20) %>%
+  ggplot(aes(x = hashtag_word, y = n)) +
+  geom_col() +
+  coord_flip() +
+  labs(x = "Count",
+       y = "Hashtag",
+       title = "Top 20 Popular Hashtags along Orban")
+```
+
+```{r}
+top_20_hashtags <- as.character(as.data.frame(top_20_freqs)[,1])
+wordcloud(top_20_hashtags, top_20_freqs, scale=c(3.0, 1.5), random.order=FALSE, rot.per=.25)
+```
+```{r}
+de_tweets = tweets[tweets$lang=="de",]
+en_tweets = tweets[tweets$lang=="en",]
+es_tweets = tweets[tweets$lang=="es",]
+fr_tweets = tweets[tweets$lang=="fr",]
+
+de_tweets
+en_tweets
+es_tweets
+fr_tweets
+```
+
+
+```{r}
+lang_tweets <- tweets %>% 
+  filter(!is.na(lang)) %>% 
+  count(lang, sort = TRUE) %>% 
+  top_n(4)
+
+lang_tweets
+```
+
+```{r}
+language <- tweets %>%
+  group_by(lang) %>%
+  select(retweet_count,lang) %>%
+  summarize(max = max(retweet_count),
+            min = min(retweet_count),
+            mean = mean(retweet_count))
+
+language
+```
+```{r}
+ggplot(data=tweets, aes(x=lang, y=retweet_count, fill=is_retweet)) +
+  geom_bar(stat="identity")
+```
+
+```{r}
+sorted <- tweets %>% 
+  sample_n(10) %>%
+  select(created_at, screen_name, text, favorite_count, retweet_count)
+
+head(sorted, 10)
+```
+
+```{r}
+print(sorted[,"text"])
+```
+```{r}
+tweets %>% 
+  arrange(-retweet_count) %>%
+  top_n(1, retweet_count) %>% 
+  select(created_at, user_id, screen_name, text, retweet_count)
+```
+
+```{r}
+followers_fdifanclub <- get_followers("fdifanclub", n=20)
+
+followers_fdifanclub 
+```
+
+```{r}
+modified_date <- format(tweets$created_at, "%y-%m-%d-%H")
+
+tweets$modified_date <- modified_date  
+```
+
+```{r}
+glimpse(tweets)
+```
+
+```{r}
+summary <- tweets %>%
+  group_by(modified_date) %>%
+  select(retweet_count,modified_date) %>%
+  summarize(max = max(retweet_count),
+            min = min(retweet_count),
+            mean = mean(retweet_count))
+
+summary
+```
+
+```{r}
+ts_plot(tweets, "hours")
+```
+
